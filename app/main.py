@@ -56,8 +56,8 @@ def chat_worker(sid, url):
             stream_state[sid]["live"] = False
             downloader = ChatDownloader()
             chat = downloader.get_chat(url)
-            stream_state[sid]["live"] = True
             for msg in chat:
+                stream_state[sid]["live"] = True
                 author = msg.get("author", {})
                 name = author.get("display_name") or author.get("name")
                 if name:
