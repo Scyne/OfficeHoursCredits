@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rogue Roll Output</title>
+<style>
+:root{--text:#f6f0dd;--muted:#b9ad92;--accent:#ffcf70;--blue:#82d8ff}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;overflow:hidden;background:transparent;color:var(--text);font-family:"Trebuchet MS",Verdana,Arial,sans-serif}
+.stage{position:fixed;inset:0;overflow:hidden;background:transparent;box-shadow:none}
+.standby{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:2rem;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
+.standby strong{display:block;margin-bottom:.75rem;color:var(--accent);font-size:clamp(1.5rem,4vw,3.5rem);text-shadow:0 0 14px rgba(255,207,112,.28)}
+.roll{position:absolute;left:0;width:100%;padding:0 1rem 7rem;text-align:center;text-shadow:0 0 10px rgba(255,242,210,.34)}
+.roll.ready{top:2rem;max-height:calc(100vh - 4rem);overflow:hidden}
+.roll.playing{top:100%;animation-name:rollUp;animation-timing-function:linear;animation-fill-mode:forwards}
+@keyframes rollUp{from{transform:translateY(0)}to{transform:translateY(calc(-100% - 100vh))}}
+.show-title{margin:0 0 1rem;font-size:clamp(2.2rem,6vw,6rem);line-height:1.02;text-transform:uppercase;letter-spacing:.08em}
+.subtitle{margin:0 0 5rem;font-size:clamp(1.2rem,2.2vw,2rem);color:var(--muted);text-transform:uppercase;letter-spacing:.14em}
+.section-heading{margin:5rem 0 2.75rem;font-size:clamp(1.15rem,2.5vw,2.35rem);color:var(--accent);letter-spacing:.12em;text-transform:uppercase}
+.credit-entry{margin:0 0 2.45rem}
+.credit-name{font-family:Georgia,"Times New Roman",serif;font-size:clamp(1.8rem,3.9vw,3.6rem);line-height:1.08;text-transform:uppercase;letter-spacing:.04em}
+.credit-title{margin-top:.35rem;color:var(--muted);font-size:clamp(1rem,1.9vw,1.55rem);line-height:1.35}
+.final-card{margin:6rem auto 1rem;width:min(780px,92%);color:var(--blue);font-size:clamp(1.25rem,2.8vw,2.45rem);line-height:1.35;text-transform:uppercase;letter-spacing:.09em}
+</style>
+</head>
+<body>
+<main class="stage">
+<div id="standby" class="standby"><div><strong>Rogue Roll Output</strong>Waiting for credits from the control page</div></div>
+<div id="roll" class="roll ready" aria-live="polite"></div>
+</main>
+<script>
+const roll = document.getElementById("roll");
+const standby = document.getElementById("standby");
+let lastCommandAt = 0;
+
+function escapeHtml(value){return String(value).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function splitForSections(participants){const specialCount=Math.min(8,Math.ceil(participants.length*0.28));return{specialThanks:participants.slice(0,specialCount),chatRogues:participants.slice(specialCount)}}
+function entry(p){return `<div class="credit-entry"><div class="credit-name">${escapeHtml(p.name)}</div><div class="credit-title">${escapeHtml(p.title||'')}</div></div>`}
+function render(payload){
+  const participants=Array.isArray(payload.participants)?payload.participants:[];
+  if(participants.length===0){standby.style.display="grid";roll.innerHTML="";return;}
+  standby.style.display="none";
+  const sections=splitForSections(participants);
+  roll.innerHTML=`<h1 class="show-title">The Modern Rogue Office Hours</h1><p class="subtitle">Tonight's Chat Credits</p><div class="section-heading">Special Thanks To</div>${sections.specialThanks.map(entry).join("")}<div class="section-heading">The Chat Rogues</div>${sections.chatRogues.map(entry).join("")}<div class="final-card">No chatters were harmed<br>in the making of this livestream</div>`;
+}
+function preview(payload){render(payload);roll.className="roll ready";roll.style.animationDuration="";}
+function start(payload){render(payload);roll.className="roll playing";roll.style.animationDuration=`${payload.duration||70}s`;roll.style.animationName="none";roll.offsetHeight;roll.style.animationName="";}
+function reset(payload){preview(payload);}
+function handlePayload(payload){
+  if(!payload||payload.updatedAt<=lastCommandAt) return;
+  lastCommandAt=payload.updatedAt;
+  if(payload.action==="clear"){standby.style.display="grid";roll.innerHTML="";return;}
+  if(payload.action==="start") start(payload); else if(payload.action==="reset") reset(payload); else preview(payload);
+}
+async function poll(){
+  try{
+    const r=await fetch('/api/command',{cache:'no-store'});
+    if(r.ok){ const data=await r.json(); handlePayload(data); }
+  }catch(e){}
+}
+setInterval(poll,1000);
+poll();
+</script>
+</body>
+</html>

@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rogue Roll Prototype</title>
+  <style>
+    :root {
+      --bg: #070707;
+      --panel: #111111;
+      --panel-2: #181818;
+      --text: #f6f0dd;
+      --muted: #b9ad92;
+      --line: #39301d;
+      --accent: #ffcf70;
+      --accent-2: #82d8ff;
+      --danger: #ff7d7d;
+      --shadow: rgba(255, 207, 112, 0.28);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(130, 216, 255, 0.1), transparent 30rem),
+        linear-gradient(180deg, #0b0b0b 0%, var(--bg) 100%);
+      color: var(--text);
+      font-family: "Trebuchet MS", Verdana, Arial, sans-serif;
+    }
+
+    button,
+    textarea,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      min-height: 2.5rem;
+      border: 1px solid #735f31;
+      border-radius: 6px;
+      background: #201a0d;
+      color: var(--text);
+      cursor: pointer;
+      padding: 0.55rem 0.8rem;
+      transition: border-color 120ms ease, transform 120ms ease, background 120ms ease;
+    }
+
+    button:hover {
+      background: #2c220f;
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    button.primary {
+      background: #4d2d00;
+      border-color: var(--accent);
+      box-shadow: 0 0 18px rgba(255, 207, 112, 0.16);
+    }
+
+    button.danger {
+      border-color: #704141;
+      color: #ffd6d6;
+      background: #2b1111;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+      transform: none;
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 1.25rem 0 2rem;
+    }
+
+    header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.75rem 0 1rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.7rem, 4vw, 3.1rem);
+      letter-spacing: 0;
+      text-transform: uppercase;
+      text-shadow: 0 0 14px var(--shadow);
+    }
+
+    .tagline {
+      margin: 0.35rem 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(320px, 0.92fr) minmax(360px, 1.08fr);
+      gap: 1rem;
+      padding-top: 1rem;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, var(--panel) 0%, #0e0e0e 100%);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 1rem;
+      min-width: 0;
+    }
+
+    .panel h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 17rem;
+      resize: vertical;
+      padding: 0.8rem;
+      border: 1px solid #3d3a32;
+      border-radius: 6px;
+      background: #080808;
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    textarea:focus,
+    input:focus,
+    select:focus {
+      outline: 2px solid rgba(255, 207, 112, 0.55);
+      outline-offset: 2px;
+    }
+
+    .button-row,
+    .control-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      align-items: center;
+      margin-top: 0.75rem;
+    }
+
+    .statline {
+      margin: 0.75rem 0 0;
+      color: var(--muted);
+      min-height: 1.25rem;
+    }
+
+    .names-tools {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .names-list {
+      display: grid;
+      gap: 0.5rem;
+      max-height: 20rem;
+      overflow: auto;
+      padding-right: 0.2rem;
+    }
+
+    .name-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .name-row input {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid #39342a;
+      border-radius: 6px;
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 0.55rem 0.65rem;
+    }
+
+    .name-row button {
+      min-width: 2.5rem;
+      padding-inline: 0.7rem;
+    }
+
+    .empty-note {
+      color: var(--muted);
+      padding: 1rem;
+      border: 1px dashed #3d3a32;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .preview-panel {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .stage {
+      position: relative;
+      height: min(66vh, 620px);
+      min-height: 440px;
+      overflow: hidden;
+      border: 1px solid #4a3d21;
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.95), transparent 16%, transparent 84%, rgba(0, 0, 0, 0.96)),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 4px),
+        #000;
+      box-shadow: inset 0 0 55px rgba(255, 207, 112, 0.08);
+    }
+
+    .credits-roll {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      padding: 0 1rem 6rem;
+      text-align: center;
+      color: var(--text);
+      text-shadow: 0 0 10px rgba(255, 242, 210, 0.34);
+      transform: translateY(0);
+    }
+
+    .credits-roll.ready {
+      top: 2rem;
+      position: relative;
+      max-height: calc(100% - 4rem);
+      overflow: auto;
+      padding-bottom: 2rem;
+    }
+
+    .credits-roll.playing {
+      position: absolute;
+      top: 100%;
+      max-height: none;
+      overflow: visible;
+      animation-name: rollUp;
+      animation-timing-function: linear;
+      animation-fill-mode: forwards;
+    }
+
+    @keyframes rollUp {
+      from {
+        transform: translateY(0);
+      }
+      to {
+        transform: translateY(calc(-100% - 100vh));
+      }
+    }
+
+    .show-title {
+      font-size: clamp(1.9rem, 5vw, 4.5rem);
+      line-height: 1.04;
+      margin: 0 0 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .subtitle {
+      margin: 0 0 4rem;
+      font-size: clamp(1.15rem, 2vw, 1.8rem);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+    }
+
+    .section-heading {
+      margin: 4rem 0 2.5rem;
+      font-size: clamp(1.1rem, 2.2vw, 2rem);
+      color: var(--accent);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .credit-entry {
+      margin: 0 0 2.2rem;
+    }
+
+    .credit-name {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(1.55rem, 3vw, 2.85rem);
+      line-height: 1.1;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .credit-title {
+      margin-top: 0.35rem;
+      color: var(--muted);
+      font-size: clamp(0.95rem, 1.7vw, 1.35rem);
+      line-height: 1.35;
+    }
+
+    .final-card {
+      margin: 5rem auto 1rem;
+      width: min(720px, 92%);
+      color: var(--accent-2);
+      font-size: clamp(1.1rem, 2.4vw, 2rem);
+      line-height: 1.35;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+    }
+
+    .speed-group {
+      display: inline-flex;
+      border: 1px solid #4a3d21;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .speed-group label {
+      cursor: pointer;
+    }
+
+    .speed-group input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .speed-group span {
+      display: block;
+      padding: 0.6rem 0.75rem;
+      background: #111;
+      color: var(--muted);
+      border-right: 1px solid #4a3d21;
+    }
+
+    .speed-group label:last-child span {
+      border-right: 0;
+    }
+
+    .speed-group input:checked + span {
+      color: var(--text);
+      background: #392406;
+    }
+
+    .copy-area {
+      width: 100%;
+      min-height: 8rem;
+      max-height: 12rem;
+      margin-top: 0.75rem;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 860px) {
+      header,
+      .names-tools {
+        align-items: start;
+        flex-direction: column;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .stage {
+        min-height: 380px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div>
+        <h1>Rogue Roll Prototype</h1>
+        <p class="tagline">Paste messy livestream chat. Extract names. Roll ridiculous credits.</p>
+      </div>
+      <button id="loadSampleButton">Load Sample Chat</button>
+    </header>
+
+    <section class="layout">
+      <div class="panel">
+        <h2>1. Paste Chat</h2>
+        <textarea id="chatInput" spellcheck="false" placeholder="Paste copied livestream chat text here..."></textarea>
+        <div class="button-row">
+          <button id="generateButton" class="primary">Generate Credits</button>
+          <button id="clearButton">Clear</button>
+        </div>
+        <p id="parseStatus" class="statline"></p>
+
+        <hr style="border: 0; border-top: 1px solid var(--line); margin: 1rem 0;">
+
+        <div class="names-tools">
+          <h2 style="margin: 0;">2. Edit Names</h2>
+          <button id="regenerateTitlesButton" disabled>Regenerate Titles</button>
+        </div>
+        <div id="namesList" class="names-list">
+          <div class="empty-note">Generated names will appear here.</div>
+        </div>
+      </div>
+
+      <div class="panel preview-panel">
+        <div>
+          <h2>3. Preview and Roll</h2>
+          <div class="control-row">
+            <button id="openOutputButton">Open Output Page</button>
+            <button id="startButton" class="primary" disabled>Roll Credits</button>
+            <button id="resetButton" disabled>Reset Roll</button>
+            <button id="copyButton" disabled>Copy Credits Text</button>
+            <button id="downloadButton" disabled>Download HTML Credits Page</button>
+          </div>
+          <div class="control-row" aria-label="Roll speed">
+            <span style="color: var(--muted);">Speed</span>
+            <div class="speed-group">
+              <label><input type="radio" name="speed" value="slow" checked><span>Slow</span></label>
+              <label><input type="radio" name="speed" value="medium"><span>Medium</span></label>
+              <label><input type="radio" name="speed" value="fast"><span>Fast</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage" aria-label="Credits preview">
+          <div id="creditsRoll" class="credits-roll ready">
+            <p class="empty-note">Generate credits to preview the roll.</p>
+          </div>
+        </div>
+
+        <textarea id="creditsText" class="copy-area" readonly placeholder="Plain text credits will appear here."></textarea>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const chatInput = document.getElementById("chatInput");
+    const generateButton = document.getElementById("generateButton");
+    const clearButton = document.getElementById("clearButton");
+    const loadSampleButton = document.getElementById("loadSampleButton");
+    const parseStatus = document.getElementById("parseStatus");
+    const namesList = document.getElementById("namesList");
+    const regenerateTitlesButton = document.getElementById("regenerateTitlesButton");
+    const openOutputButton = document.getElementById("openOutputButton");
+    const startButton = document.getElementById("startButton");
+    const resetButton = document.getElementById("resetButton");
+    const copyButton = document.getElementById("copyButton");
+    const downloadButton = document.getElementById("downloadButton");
+    const creditsRoll = document.getElementById("creditsRoll");
+    const creditsText = document.getElementById("creditsText");
+    const outputChannel = "BroadcastChannel" in window ? new window.BroadcastChannel("rogue-roll-output") : null;
+    const outputPayloadKey = "rogueRollCreditsPayload";
+    const outputCommandKey = "rogueRollCreditsCommand";
+
+    const sampleChat = `[10:42 PM] Brian Brushwood: hello everybody
+YouTube · Some Viewer: this is great
+Twitch · Another Person: lol
+Nightbot: Remember to like and subscribe
+Pinned message: Tonight's links are in the description
+Jennifer Mystery
+That button was absolutely haunted
+Professor Chaos: I brought backup snacks
+[10:43 PM] The Button Guy: press it again
+Restream.io: connected
+message retracted
+Samantha Stage Left: this has cable access energy
+@RogueRandy: wait, what?
+Captain Spreadsheet: no one panic
+Joined: Mystery Guest
+left the chat
+The Button Guy: I said press it again
+Twitch · Pixel Wizard: 10 out of 10 would panic mildly
+YouTube · Lurker Deluxe: finally, my weird training pays off
+Deputy Greg: this is not how physics works`;
+
+    const titlePool = [
+      "Senior Vice President of Bad Ideas",
+      "Associate Producer of Unnecessary Confidence",
+      "Chairperson of the Vibes Committee",
+      "Director of Button Pressing",
+      "Deputy Minister of Shenanigans",
+      "Continuity Error Supervisor",
+      "Chief Snack Auditor",
+      "Intern, Department of Dubious Decisions",
+      "Executive Producer of the B Plot",
+      "Keeper of the Emergency Confetti",
+      "Vice President of Saying Wait, What?",
+      "Technical Director of Mild Panic",
+      "The Person Who Said What We Were All Thinking",
+      "Assistant Coordinator of Suspicious Buttons",
+      "Broadcast Fellow in Questionable Timing",
+      "Director of Accidental Science",
+      "Field Marshal of Desk Clutter",
+      "Chief Executive of Looking Busy",
+      "Producer of Almost Useful Warnings",
+      "Assistant to the Assistant to the Plan",
+      "Director of Dramatic Cable Management",
+      "Lead Consultant for Unclear Objectives",
+      "Senior Analyst of Things That Went Clunk",
+      "Supervisor of Off-Camera Snacks",
+      "Junior Wrangler of The Third Monitor",
+      "Commissioner of Beeping Equipment",
+      "Associate Dean of Weird Lighting",
+      "Director of Plausible Deniability",
+      "Executive Chair of The Loud Noise Committee",
+      "Assistant Editor of Forgotten Context",
+      "Coordinator of Highly Specific Panic",
+      "Head of Recreational Overthinking",
+      "Vice President of Premature Applause",
+      "Chief Tape Label Strategist",
+      "Senior Fellow in Button Anxiety",
+      "Director of Emergency Jazz Hands",
+      "Lead Designer of Unnecessary Labels",
+      "Assistant Producer of The Side Quest",
+      "Chair of The Probably Fine Task Force",
+      "Chief Inspector of Wobbly Tripods",
+      "Director of Ambient Nonsense",
+      "Executive Producer of The Weird Part",
+      "Deputy Chief of Keeping It Rolling",
+      "Lead Advisor for Maybe Try It Again",
+      "Principal Investigator of Suspicious Smoke",
+      "Department Head of Dramatic Pauses",
+      "Night Manager of The Idea Drawer",
+      "Director of Last-Minute Excellence",
+      "Certified Operator of The Big Red Button",
+      "Associate Wrangler of Loose Cables",
+      "Senior Producer of Improvised Authority",
+      "Official Noticer of Background Details",
+      "Chief Procurement Officer of Tiny Props",
+      "Director of Unexpected Competence",
+      "Minister Without Portfolio, With Clipboard",
+      "Assistant Archivist of Bad Decisions",
+      "Deputy Director of Table Read Energy",
+      "Lead Technician of The Humming Sound",
+      "Chairperson of Questionable Props",
+      "Executive Analyst of That One Noise",
+      "Production Fellow in Chaotic Courtesy",
+      "Key Grip of Emotional Resilience",
+      "Director of Budget Thunder",
+      "Senior Consultant for Very Normal Behavior",
+      "Associate Producer of Suspenseful Silence",
+      "Head of The Button Preservation Society",
+      "Official Keeper of The Spare HDMI",
+      "Vice Chancellor of Dramatic Reactions",
+      "Lead Engineer of Carefully Managed Mayhem",
+      "Senior Coordinator of The Cold Open",
+      "Director of Broadcast Shenanigans",
+      "Executive Wrangler of Wandering Topics",
+      "Assistant Director of Unhelpful Confidence",
+      "Chief Quality Officer of Half Plans",
+      "Commissioner of The After-Hours Bit",
+      "Principal Supervisor of Mystery Cables",
+      "Junior Deputy of Saying Enhance",
+      "Lead Strategist of Last Second Fixes",
+      "Director of Reverse Countdown Energy",
+      "Senior Fellow of The Mislabelled Switch",
+      "Chief Archivist of The Weird Tape",
+      "Official Sponsor of Loud Shirts",
+      "Production Manager of The Bizarrely Specific",
+      "Assistant Curator of Suspicious Props",
+      "Director of Friendly Chaos",
+      "Executive Producer of The Callback",
+      "Key Strategist of Pretending This Was Planned",
+      "Senior Operator of The Wrong Knob",
+      "Associate Director of Candlelit Troubleshooting",
+      "Chief Counsel for The Bit",
+      "Vice President of Nodding Like We Understand",
+      "Lead Diplomat to The Audio Board",
+      "Assistant Producer of Background Lore",
+      "Director of Maximum Side-Eye",
+      "Official Witness to The Clicking Sound"
+    ];
+
+    let participants = [];
+    let titleDeck = [];
+
+    const systemPatterns = [
+      /(^|\s)(joined|left|has joined|has left|entered|exited)(\s|$)/i,
+      /pinned message/i,
+      /deleted message/i,
+      /message retracted/i,
+      /restream\.io/i,
+      /nightbot/i,
+      /streamlabs/i,
+      /subscribe to/i,
+      /moderator/i
+    ];
+
+    function normalizeSpaces(value) {
+      return value.replace(/\s+/g, " ").trim();
+    }
+
+    function stripChatNoise(value) {
+      return normalizeSpaces(value)
+        .replace(/^\[[^\]]{1,32}\]\s*/, "")
+        .replace(/^\(?\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?\)?\s*/i, "")
+        .replace(/^(YouTube|Youtube|Twitch|Facebook|Kick|Discord|Restream)\s*[·|:-]\s*/i, "")
+        .replace(/^(From|User|Name)\s*:\s*/i, "")
+        .replace(/^[#*@\s]+/, "")
+        .replace(/\s*(?:says|said)$/i, "")
+        .replace(/[^\p{L}\p{N} ._'&-]/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function isLikelySystemLine(line) {
+      return !line || systemPatterns.some((pattern) => pattern.test(line));
+    }
+
+    function looksLikeName(candidate) {
+      const name = stripChatNoise(candidate);
+      if (name.length < 3 || name.length > 42) return false;
+      if (/https?:\/\/|www\.|\.com|\.net|\.org/i.test(name)) return false;
+      if (/^\d+$/.test(name)) return false;
+      if ((name.match(/[A-Za-z\p{L}]/gu) || []).length < 2) return false;
+      if (/\b(joined|left|deleted|retracted|message|pinned|subscribe)\b/i.test(name)) return false;
+      return true;
+    }
+
+    function looksLikeChatMessage(line) {
+      const text = normalizeSpaces(line);
+      if (!text) return false;
+      if (/[.!?]$/.test(text)) return true;
+      if (/^(lol|lmao|haha|hello|wait|what|no|yes|this|that|it|i|we|you|they|finally|press)\b/i.test(text)) return true;
+      if (/^[a-z]/.test(text) && text.split(/\s+/).length > 1) return true;
+      if (text.length > 22 && text.split(/\s+/).length > 3) return true;
+      return false;
+    }
+
+    function scoreNameVersion(name) {
+      let score = name.length;
+      if (/[a-z]/.test(name) && /[A-Z]/.test(name)) score += 12;
+      if (/\s/.test(name)) score += 8;
+      if (/^[A-Z][a-z]/.test(name)) score += 6;
+      if (name === name.toUpperCase()) score -= 10;
+      return score;
+    }
+
+    function niceCase(name) {
+      if (name !== name.toUpperCase()) return name;
+      return name.toLowerCase().replace(/\b([a-z])/g, (match) => match.toUpperCase());
+    }
+
+    function addNameCandidate(map, rawName) {
+      const cleaned = niceCase(stripChatNoise(rawName));
+      if (!looksLikeName(cleaned)) return;
+      const key = cleaned.toLocaleLowerCase();
+      const current = map.get(key);
+      if (!current || scoreNameVersion(cleaned) > scoreNameVersion(current)) {
+        map.set(key, cleaned);
+      }
+    }
+
+    // The parser favors common chat exports first: names before colons, then platform-prefixed lines,
+    // then a cautious fallback for two-line copy/paste where a display name sits above a message.
+    function extractNames(rawText) {
+      const map = new Map();
+      const lines = rawText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+
+      lines.forEach((line, index) => {
+        if (isLikelySystemLine(line)) return;
+
+        const withoutTimestamp = line.replace(/^\[[^\]]{1,32}\]\s*/, "");
+        const platformMatch = withoutTimestamp.match(/^(?:YouTube|Youtube|Twitch|Facebook|Kick|Discord)\s*[·|:-]\s*([^:]{3,52})\s*:/i);
+        if (platformMatch) {
+          addNameCandidate(map, platformMatch[1]);
+          return;
+        }
+
+        const colonMatch = withoutTimestamp.match(/^([^:]{3,52})\s*:/);
+        if (colonMatch) {
+          addNameCandidate(map, colonMatch[1]);
+          return;
+        }
+
+        const nextLine = lines[index + 1] || "";
+        const currentLooksLikeStandaloneName = looksLikeName(line) && !looksLikeChatMessage(line) && line.split(/\s+/).length <= 5;
+        const nextLooksLikeMessage = nextLine && looksLikeChatMessage(nextLine) && !isLikelySystemLine(nextLine);
+        if (currentLooksLikeStandaloneName && nextLooksLikeMessage) {
+          addNameCandidate(map, line);
+        }
+      });
+
+      return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
+    }
+
+    function shuffle(array) {
+      const copy = array.slice();
+      for (let i = copy.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    // Titles are dealt from a shuffled deck so nobody repeats until every title has been used.
+    function getNextTitle() {
+      if (titleDeck.length === 0) {
+        titleDeck = shuffle(titlePool);
+      }
+      return titleDeck.pop();
+    }
+
+    function assignTitles() {
+      titleDeck = shuffle(titlePool);
+      participants = participants.map((participant) => ({
+        ...participant,
+        title: getNextTitle()
+      }));
+    }
+
+    function syncParticipantsFromInputs() {
+      const inputs = Array.from(namesList.querySelectorAll("input"));
+      participants = inputs
+        .map((input, index) => ({
+          name: normalizeSpaces(input.value),
+          title: participants[index] ? participants[index].title : getNextTitle()
+        }))
+        .filter((participant) => participant.name);
+    }
+
+    function renderNamesList() {
+      namesList.innerHTML = "";
+      if (participants.length === 0) {
+        namesList.innerHTML = '<div class="empty-note">Generated names will appear here.</div>';
+        return;
+      }
+
+      participants.forEach((participant, index) => {
+        const row = document.createElement("div");
+        row.className = "name-row";
+
+        const input = document.createElement("input");
+        input.value = participant.name;
+        input.setAttribute("aria-label", `Participant ${index + 1}`);
+        input.addEventListener("input", () => {
+          participants[index].name = normalizeSpaces(input.value);
+          renderCredits();
+        });
+
+        const remove = document.createElement("button");
+        remove.className = "danger";
+        remove.type = "button";
+        remove.textContent = "Remove";
+        remove.addEventListener("click", () => {
+          participants.splice(index, 1);
+          renderNamesList();
+          renderCredits();
+          updateControls();
+        });
+
+        row.append(input, remove);
+        namesList.append(row);
+      });
+    }
+
+    function splitForSections(list) {
+      const specialCount = Math.min(8, Math.ceil(list.length * 0.28));
+      return {
+        specialThanks: list.slice(0, specialCount),
+        chatRogues: list.slice(specialCount)
+      };
+    }
+
+    function createEntry(participant) {
+      const entry = document.createElement("div");
+      entry.className = "credit-entry";
+      entry.innerHTML = `
+        <div class="credit-name"></div>
+        <div class="credit-title"></div>
+      `;
+      entry.querySelector(".credit-name").textContent = participant.name;
+      entry.querySelector(".credit-title").textContent = participant.title;
+      return entry;
+    }
+
+    function renderCredits() {
+      syncParticipantsFromInputs();
+      creditsRoll.className = "credits-roll ready";
+      creditsRoll.style.animationDuration = "";
+      creditsRoll.innerHTML = "";
+
+      if (participants.length === 0) {
+        creditsRoll.innerHTML = '<p class="empty-note">Generate credits to preview the roll.</p>';
+        creditsText.value = "";
+        return;
+      }
+
+      const title = document.createElement("div");
+      title.innerHTML = `
+        <h2 class="show-title">The Modern Rogue Office Hours</h2>
+        <p class="subtitle">Tonight's Chat Credits</p>
+      `;
+      creditsRoll.append(title);
+
+      const sections = splitForSections(participants);
+      appendSection("Special Thanks To", sections.specialThanks);
+      appendSection("The Chat Rogues", sections.chatRogues);
+
+      const final = document.createElement("div");
+      final.className = "final-card";
+      final.textContent = "No chatters were harmed in the making of this livestream";
+      creditsRoll.append(final);
+
+      creditsText.value = buildPlainTextCredits();
+    }
+
+    function appendSection(headingText, items) {
+      if (items.length === 0) return;
+      const heading = document.createElement("div");
+      heading.className = "section-heading";
+      heading.textContent = headingText;
+      creditsRoll.append(heading);
+      items.forEach((participant) => creditsRoll.append(createEntry(participant)));
+    }
+
+    function buildPlainTextCredits() {
+      const sections = splitForSections(participants);
+      const lines = [
+        "THE MODERN ROGUE OFFICE HOURS",
+        "Tonight's Chat Credits",
+        "",
+        "SPECIAL THANKS TO",
+        ""
+      ];
+
+      sections.specialThanks.forEach((participant) => {
+        lines.push(participant.name, participant.title, "");
+      });
+
+      lines.push("THE CHAT ROGUES", "");
+      sections.chatRogues.forEach((participant) => {
+        lines.push(participant.name, participant.title, "");
+      });
+
+      lines.push("NO CHATTERS WERE HARMED", "IN THE MAKING OF THIS LIVESTREAM");
+      return lines.join("\n");
+    }
+
+    function buildOutputPayload(action) {
+      return {
+        action,
+        updatedAt: Date.now(),
+        participants: participants.map((participant) => ({
+          name: participant.name,
+          title: participant.title
+        })),
+        speed: selectedSpeed(),
+        duration: speedDuration(),
+        plainText: buildPlainTextCredits()
+      };
+    }
+
+    function sendOutputCommand(action) {
+      const payload = buildOutputPayload(action);
+      localStorage.setItem(outputPayloadKey, JSON.stringify(payload));
+      localStorage.setItem(outputCommandKey, JSON.stringify({ action, updatedAt: payload.updatedAt }));
+      if (outputChannel) outputChannel.postMessage(payload);
+    }
+
+    function openOutputPage() {
+      renderCredits();
+      if (participants.length > 0) sendOutputCommand("preview");
+      window.open("output.html", "rogue-roll-output");
+    }
+
+    function updateControls() {
+      const hasCredits = participants.length > 0;
+      regenerateTitlesButton.disabled = !hasCredits;
+      startButton.disabled = !hasCredits;
+      resetButton.disabled = !hasCredits;
+      copyButton.disabled = !hasCredits;
+      downloadButton.disabled = !hasCredits;
+    }
+
+    function selectedSpeed() {
+      return document.querySelector('input[name="speed"]:checked').value;
+    }
+
+    function speedDuration() {
+      const count = Math.max(participants.length, 1);
+      const base = { slow: 86, medium: 56, fast: 34 }[selectedSpeed()];
+      return Math.max(base, base + count * 2.4);
+    }
+
+    function startRoll() {
+      renderCredits();
+      creditsRoll.className = "credits-roll playing";
+      creditsRoll.style.animationDuration = `${speedDuration()}s`;
+      sendOutputCommand("start");
+    }
+
+    function resetRoll() {
+      creditsRoll.className = "credits-roll ready";
+      creditsRoll.style.animationDuration = "";
+      if (participants.length > 0) sendOutputCommand("reset");
+    }
+
+    function downloadCreditsPage() {
+      const escapedCredits = participants.map((participant) => ({
+        name: participant.name,
+        title: participant.title
+      }));
+      const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rogue Roll Credits</title>
+<style>
+body{margin:0;background:#000;color:#f6f0dd;font-family:Georgia,"Times New Roman",serif;overflow:hidden}
+.stage{position:fixed;inset:0;overflow:hidden;background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 4px),#000}
+.roll{position:absolute;top:100%;left:0;width:100%;text-align:center;animation:roll ${speedDuration()}s linear forwards;text-shadow:0 0 10px rgba(255,242,210,.35);padding-bottom:8rem}
+@keyframes roll{to{transform:translateY(calc(-100% - 100vh))}}
+.show{font-size:clamp(2rem,6vw,5rem);text-transform:uppercase;letter-spacing:.08em;margin:0 1rem 1rem}
+.sub,.head{text-transform:uppercase;letter-spacing:.13em;color:#ffcf70}
+.sub{font-size:clamp(1.1rem,2vw,1.8rem);margin:0 1rem 5rem;color:#b9ad92}
+.head{font-size:clamp(1.1rem,2.2vw,2rem);margin:4rem 1rem 2.5rem}
+.entry{margin:0 1rem 2.25rem}
+.name{font-size:clamp(1.6rem,3.4vw,3rem);text-transform:uppercase;letter-spacing:.04em}
+.title{font-family:"Trebuchet MS",Verdana,sans-serif;color:#b9ad92;font-size:clamp(1rem,1.8vw,1.35rem);margin-top:.35rem}
+.final{margin:5rem auto 0;width:min(760px,90%);font-size:clamp(1.2rem,2.8vw,2.2rem);line-height:1.35;text-transform:uppercase;letter-spacing:.09em;color:#82d8ff}
+</style>
+</head>
+<body>
+<div class="stage"><div class="roll" id="roll"></div></div>
+<script>
+const participants = ${JSON.stringify(escapedCredits)};
+const roll = document.getElementById("roll");
+function entry(p){return '<div class="entry"><div class="name">'+escapeHtml(p.name)+'</div><div class="title">'+escapeHtml(p.title)+'</div></div>'}
+function escapeHtml(v){return String(v).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+const cut = Math.min(8, Math.ceil(participants.length * 0.28));
+roll.innerHTML = '<h1 class="show">The Modern Rogue Office Hours</h1><p class="sub">Tonight\\'s Chat Credits</p><div class="head">Special Thanks To</div>' + participants.slice(0, cut).map(entry).join("") + '<div class="head">The Chat Rogues</div>' + participants.slice(cut).map(entry).join("") + '<div class="final">No chatters were harmed<br>in the making of this livestream</div>';
+<\/script>
+</body>
+</html>`;
+      const blob = new Blob([html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "rogue-roll-credits.html";
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    generateButton.addEventListener("click", () => {
+      const names = extractNames(chatInput.value);
+      participants = names.map((name) => ({ name, title: "" }));
+      assignTitles();
+      renderNamesList();
+      renderCredits();
+      sendOutputCommand("preview");
+      updateControls();
+      parseStatus.textContent = names.length
+        ? `Found ${names.length} likely participant${names.length === 1 ? "" : "s"}.`
+        : "No likely names found yet. Try a larger chat paste or add clearer name/message lines.";
+    });
+
+    regenerateTitlesButton.addEventListener("click", () => {
+      syncParticipantsFromInputs();
+      assignTitles();
+      renderNamesList();
+      renderCredits();
+      sendOutputCommand("preview");
+    });
+
+    clearButton.addEventListener("click", () => {
+      chatInput.value = "";
+      participants = [];
+      parseStatus.textContent = "";
+      renderNamesList();
+      renderCredits();
+      updateControls();
+      localStorage.removeItem(outputPayloadKey);
+      localStorage.removeItem(outputCommandKey);
+      if (outputChannel) outputChannel.postMessage({ action: "clear", updatedAt: Date.now(), participants: [] });
+    });
+
+    loadSampleButton.addEventListener("click", () => {
+      chatInput.value = sampleChat;
+      parseStatus.textContent = "Sample chat loaded. Click Generate Credits.";
+    });
+
+    openOutputButton.addEventListener("click", openOutputPage);
+    startButton.addEventListener("click", startRoll);
+    resetButton.addEventListener("click", resetRoll);
+    copyButton.addEventListener("click", async () => {
+      renderCredits();
+      try {
+        await navigator.clipboard.writeText(creditsText.value);
+        parseStatus.textContent = "Credits text copied.";
+      } catch (error) {
+        creditsText.focus();
+        creditsText.select();
+        document.execCommand("copy");
+        parseStatus.textContent = "Credits text copied from the text box.";
+      }
+    });
+    downloadButton.addEventListener("click", () => {
+      renderCredits();
+      downloadCreditsPage();
+    });
+
+    document.querySelectorAll('input[name="speed"]').forEach((input) => {
+      input.addEventListener("change", () => {
+        if (creditsRoll.classList.contains("playing")) startRoll();
+      });
+    });
+
+    updateControls();
+  </script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Office Credits Control</title>
+<style>
+:root { --bg:#070707; --panel:#111; --text:#f6f0dd; --muted:#b9ad92; --line:#39301d; --accent:#ffcf70; }
+*{box-sizing:border-box} body{margin:0;background:#0b0b0b;color:var(--text);font-family:"Trebuchet MS",Verdana,Arial,sans-serif}
+.app{width:min(1100px,calc(100% - 2rem));margin:0 auto;padding:1.5rem 0}
+header{border-bottom:1px solid var(--line);padding-bottom:1rem;margin-bottom:1rem}
+h1{margin:0;font-size:2rem;text-transform:uppercase}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:1rem}
+.panel h2{margin:0 0 .75rem;color:var(--accent);text-transform:uppercase;font-size:1rem}
+.status{display:grid;gap:.5rem}
+.stream{padding:.5rem;border:1px solid var(--line);border-radius:6px;display:flex;justify-content:space-between}
+.live{color:#7dff7d} .offline{color:#ff7d7d}
+textarea{width:100%;min-height:300px;background:#080808;color:var(--text);border:1px solid #3d3a32;border-radius:6px;padding:.7rem;font-family:monospace}
+button{margin:.3rem .3rem 0 0;padding:.55rem .9rem;background:#201a0d;border:1px solid #735f31;border-radius:6px;color:var(--text);cursor:pointer}
+button:hover{border-color:var(--accent);background:#2c220f}
+.row{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-top:.5rem}
+small{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="app">
+<header><h1>Office Credits Control</h1><small>Monitors Night Attack, Scam School, Modern Rogue, Great Night</small></header>
+<div class="grid">
+<div class="panel">
+<h2>Streams</h2>
+<div id="streams" class="status"></div>
+<p id="total"></p>
+<h2>Chatter List (editable)</h2>
+<textarea id="names"></textarea>
+<div class="row">
+<button id="save">Save Edits</button>
+<button id="clear" style="border-color:#704141;background:#2b1111">Clear Session</button>
+<button id="refresh">Refresh</button>
+</div>
+</div>
+<div class="panel">
+<h2>Roll Controls</h2>
+<div class="row">
+<label><input type="radio" name="speed" value="slow"> Slow</label>
+<label><input type="radio" name="speed" value="medium" checked> Medium</label>
+<label><input type="radio" name="speed" value="fast"> Fast</label>
+</div>
+<div class="row">
+<button id="start">Start Roll</button>
+<button id="reset">Reset Roll</button>
+<button id="open">Open Output</button>
+</div>
+<p><small>Output URL: <code>/output</code> — use as OBS Browser Source. Background is transparent.</small></p>
+</div>
+</div>
+</div>
+<script>
+const streamsEl = document.getElementById('streams');
+const totalEl = document.getElementById('total');
+const namesEl = document.getElementById('names');
+
+async function loadStatus(){
+  const r = await fetch('/api/status');
+  const data = await r.json();
+  streamsEl.innerHTML = data.streams.map(s => `<div class="stream"><span>${s.name}</span><span class="${s.live?'live':'offline'}">${s.live?'LIVE':'offline'}</span></div>`).join('');
+  totalEl.textContent = `Total chatters: ${data.total_chatters}`;
+}
+async function loadChatters(){
+  const r = await fetch('/api/chatters');
+  const data = await r.json();
+  if (document.activeElement !== namesEl) {
+    namesEl.value = data.chatters.map(c=>c.name).join('\n');
+  }
+}
+async function saveEdits(){
+  const names = namesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
+  await fetch('/api/chatters',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({names})});
+  loadStatus();
+}
+async function clearSession(){
+  if(!confirm('Clear all chatters?')) return;
+  await fetch('/api/chatters',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({names:[]})});
+  namesEl.value='';
+  loadStatus();
+}
+function getDuration(){
+  const speed = document.querySelector('input[name="speed"]:checked').value;
+  const count = namesEl.value.split('\n').filter(Boolean).length;
+  const base = {slow:86, medium:56, fast:34}[speed];
+  return Math.max(base, base + count * 2.4);
+}
+async function sendCommand(action){
+  const participants = namesEl.value.split('\n').filter(Boolean).map(n=>({name:n,title:''}));
+  await fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action, participants, duration:getDuration()})});
+}
+document.getElementById('save').onclick = saveEdits;
+document.getElementById('clear').onclick = clearSession;
+document.getElementById('refresh').onclick = ()=>{loadStatus();loadChatters();};
+document.getElementById('start').onclick = ()=>sendCommand('start');
+document.getElementById('reset').onclick = ()=>sendCommand('reset');
+document.getElementById('open').onclick = ()=>window.open('/output','officecredits-output');
+loadStatus(); loadChatters();
+setInterval(loadStatus,10000);
+setInterval(loadChatters,10000);
+</script>
+</body>
+</html>

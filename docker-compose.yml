@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+  officecredits:
+    build: .
+    container_name: officecredits
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - TZ=America/New_York
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.officecredits.rule=Host(`officecredits.hive.scyne.com`)
+      - traefik.http.services.officecredits.loadbalancer.server.port=8000
