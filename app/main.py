@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from app.chat_utils import TwitchChat, YouTubeChat
+from app.titles import get_random_title
 
 DATA_DIR = "/app/data"
 STATE_FILE = os.path.join(DATA_DIR, "state.json")
@@ -46,7 +47,8 @@ def add_chatter(name):
         return
     now = time.time()
     if key not in chatters:
-        chatters[key] = {"name": name.strip(), "first_seen": now}
+        used_titles = {c.get("title", "") for c in chatters.values() if c.get("title")}
+        chatters[key] = {"name": name.strip(), "title": get_random_title(used_titles), "first_seen": now}
         save_state()
     last_message_ts = now
 
@@ -110,23 +112,48 @@ async def api_status():
 @app.get("/api/chatters")
 async def api_get_chatters():
     sorted_list = sorted(chatters.values(), key=lambda x: x["first_seen"])
-    return {"chatters": [{"name": c["name"], "title": "", "first_seen": c["first_seen"]} for c in sorted_list]}
+    return {"chatters": [{"name": c["name"], "title": c.get("title", ""), "first_seen": c["first_seen"]} for c in sorted_list]}
 
 @app.post("/api/chatters")
 async def api_set_chatters(request: Request):
     global chatters
     data = await request.json()
-    names = data.get("names", [])
+    names_data = data.get("names", [])
     new = {}
     now = time.time()
-    for n in names:
+
+    used_titles = {c.get("title", "") for c in chatters.values() if c.get("title")}
+
+    for item in names_data:
+        # Check if item is a dictionary or a string (for backwards compatibility if needed)
+        if isinstance(item, dict):
+            n = item.get("name", "")
+            t = item.get("title", "")
+        else:
+            n = item
+            t = ""
+
         key = n.lower().strip()
         if not key:
             continue
+
+        if not t:
+            # Reassign a random title if one is missing but it's new
+            # If it already exists in chatters and has a title, we keep it
+            if key in chatters and chatters[key].get("title"):
+                t = chatters[key]["title"]
+            else:
+                t = get_random_title(used_titles)
+                used_titles.add(t)
+
         if key in chatters:
             new[key] = chatters[key]
+            # Update title in case it was explicitly changed
+            if isinstance(item, dict) and "title" in item:
+                 new[key]["title"] = t
         else:
-            new[key] = {"name": n.strip(), "first_seen": now}
+            new[key] = {"name": n.strip(), "title": t, "first_seen": now}
+
     chatters = new
     save_state()
     return {"ok": True, "total": len(chatters)}
