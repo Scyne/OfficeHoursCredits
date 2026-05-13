@@ -2,7 +2,7 @@ import asyncio, json, os, time, threading
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-from chat_downloader import ChatDownloader
+from app.chat_utils import TwitchChat, YouTubeChat
 
 DATA_DIR = "/app/data"
 STATE_FILE = os.path.join(DATA_DIR, "state.json")
@@ -50,37 +50,35 @@ def add_chatter(name):
         save_state()
     last_message_ts = now
 
-def chat_worker(sid, url):
-    while True:
-        try:
-            stream_state[sid]["live"] = False
-            downloader = ChatDownloader()
-            chat = downloader.get_chat(url)
-            for msg in chat:
-                stream_state[sid]["live"] = True
-                author = msg.get("author", {})
-                name = author.get("display_name") or author.get("name")
-                if name:
-                    add_chatter(name)
-                    stream_state[sid]["last_seen"] = time.time()
-        except Exception:
-            time.sleep(15)
-        finally:
-            stream_state[sid]["live"] = False
-            time.sleep(10)
+def callback_wrapper(name, sid):
+    stream_state[sid]["last_seen"] = time.time()
+    add_chatter(name)
+
+async def chat_worker_async(sid, cfg):
+    url = cfg["url"]
+    if "twitch.tv" in url:
+        channel = url.split('/')[-1]
+        chat = TwitchChat(channel, callback_wrapper, sid, stream_state)
+    else:
+        chat = YouTubeChat(url, callback_wrapper, sid, stream_state)
+    await chat.run()
+
+def start_chat_worker(sid, cfg):
+    asyncio.run(chat_worker_async(sid, cfg))
 
 async def purge_task():
     global chatters, last_message_ts, session_start
     while True:
         await asyncio.sleep(60)
-        now = time.time()
-        all_offline = all(not s["live"] for s in stream_state.values())
-        if all_offline and last_message_ts and (now - last_message_ts > 1800):
-            with state_lock:
-                chatters = {}
-                last_message_ts = 0
-                session_start = now
-                save_state()
+        # Disabled auto clear based on user request.
+        # now = time.time()
+        # all_offline = all(not s["live"] for s in stream_state.values())
+        # if all_offline and last_message_ts and (now - last_message_ts > 1800):
+        #     with state_lock:
+        #         chatters = {}
+        #         last_message_ts = 0
+        #         session_start = now
+        #         save_state()
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="/app/app/static"), name="static")
@@ -89,7 +87,7 @@ app.mount("/static", StaticFiles(directory="/app/app/static"), name="static")
 async def startup():
     load_state()
     for sid, cfg in STREAMS.items():
-        t = threading.Thread(target=chat_worker, args=(sid, cfg["url"]), daemon=True)
+        t = threading.Thread(target=start_chat_worker, args=(sid, cfg), daemon=True)
         t.start()
     asyncio.create_task(purge_task())
 
