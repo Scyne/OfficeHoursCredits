@@ -42,7 +42,7 @@ function render(payload){
   if(participants.length===0){standby.style.display="grid";roll.innerHTML="";return;}
   standby.style.display="none";
   const sections=splitForSections(participants);
-  roll.innerHTML=`<h1 class="show-title">The Modern Rogue Office Hours</h1><p class="subtitle">Todays's Chat Credits</p><div class="section-heading">Special Thanks To</div>${sections.specialThanks.map(entry).join("")}<div class="section-heading">The Chat Rogues</div>${sections.chatRogues.map(entry).join("")}<div class="final-card">No chatters were harmed<br>in the making of this livestream<br>&lt;&gt;</div>`;
+  roll.innerHTML=`<h1 class="show-title">The Modern Rogue Office Hours</h1><p class="subtitle">Today's Chat Credits</p><div class="section-heading">Special Thanks To</div>${sections.specialThanks.map(entry).join("")}<div class="section-heading">The Chat Rogues</div>${sections.chatRogues.map(entry).join("")}<div class="final-card">No chatters were harmed<br>in the making of this livestream<br>&lt;&gt;</div>`;
 }
 function preview(payload){render(payload);roll.className="roll ready";roll.style.animationDuration="";}
 function start(payload){render(payload);roll.className="roll playing";roll.style.animationDuration=`${payload.duration||70}s`;roll.style.animationName="none";roll.offsetHeight;roll.style.animationName="";}
