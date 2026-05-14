@@ -42,7 +42,7 @@ class TwitchChat:
             except Exception as e:
                 pass
             self.stream_state_ref[self.sid]["live"] = False
-            await asyncio.sleep(15)
+            await asyncio.sleep(60)
 
 class YouTubeChat:
     def __init__(self, url, callback, sid, stream_state_ref):
@@ -53,11 +53,23 @@ class YouTubeChat:
 
     def get_yt_live_id(self):
         try:
-            req = urllib.request.Request(self.url, headers={'User-Agent': 'Mozilla/5.0'})
+            # Use the /live URL if possible
+            url = self.url if self.url.endswith('/live') else f"{self.url.rstrip('/')}/live"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req) as response:
                 html = response.read().decode('utf-8')
-                if 'isLiveNow":true' not in html and 'isLiveBroadcast":true' not in html:
-                    return None
+
+                # Check canonical URL to determine if we are on a live video or redirected to channel page
+                canonical_match = re.search(r'<link rel="canonical" href="([^"]+)">', html)
+                if canonical_match:
+                    canonical = canonical_match.group(1)
+                    if 'watch?v=' in canonical:
+                        return canonical.split('watch?v=')[1]
+                    elif '/channel/' in canonical or '/@' in canonical:
+                        # Redirected to a channel page implies they are not live
+                        return None
+
+                # Fallback to look specifically for the videoId if canonical is undefined or missing
                 match = re.search(r'"videoId":"([^"]+)"', html)
                 if match:
                     return match.group(1)
@@ -86,4 +98,4 @@ class YouTubeChat:
                 pass
 
             self.stream_state_ref[self.sid]["live"] = False
-            await asyncio.sleep(15)
+            await asyncio.sleep(60)

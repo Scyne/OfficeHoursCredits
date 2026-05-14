@@ -11,9 +11,9 @@ os.makedirs(DATA_DIR, exist_ok=True)
 
 STREAMS = {
     "nightattack": {"name": "Night Attack (Twitch)", "url": "https://www.twitch.tv/nightattack"},
-    "scamschool": {"name": "Scam School (YouTube)", "url": "https://www.youtube.com/scamschool"},
-    "modernrogue": {"name": "Modern Rogue (YouTube)", "url": "https://www.youtube.com/@ModernRogue"},
-    "greatnight": {"name": "Great Night (YouTube)", "url": "https://www.youtube.com/@GreatNightPod"},
+    "scamschool": {"name": "Scam School (YouTube)", "url": "https://www.youtube.com/scamschool/live"},
+    "modernrogue": {"name": "Modern Rogue (YouTube)", "url": "https://www.youtube.com/@ModernRogue/live"},
+    "greatnight": {"name": "Great Night (YouTube)", "url": "https://www.youtube.com/@GreatNightPod/live"},
 }
 
 chatters = {}
