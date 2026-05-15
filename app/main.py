@@ -40,10 +40,12 @@ def save_state():
         with open(STATE_FILE, "w") as f:
             json.dump(data, f)
 
+EXCLUDED_NAMES = {"nightbot", "nightattack", "scamschool", "modernrogue", "greatnight"}
+
 def add_chatter(name):
     global last_message_ts
     key = name.lower().strip()
-    if not key:
+    if not key or key in EXCLUDED_NAMES:
         return
     now = time.time()
     if key not in chatters:
@@ -172,3 +174,20 @@ async def api_set_command(request: Request):
         "updatedAt": int(time.time() * 1000)
     })
     return {"ok": True}
+
+@app.post("/api/autostart")
+async def api_autostart():
+    sorted_list = sorted(chatters.values(), key=lambda x: x["first_seen"])
+    participants = [{"name": c["name"], "title": c.get("title", "")} for c in sorted_list]
+    count = len(participants)
+
+    # Base duration for "fast" speed is 34, plus 2.4 per participant
+    duration = max(34, 34 + count * 2.4)
+
+    command_state.update({
+        "action": "start",
+        "participants": participants,
+        "duration": duration,
+        "updatedAt": int(time.time() * 1000)
+    })
+    return {"ok": True, "duration": duration, "participants_count": count}
