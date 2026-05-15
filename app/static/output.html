@@ -60,7 +60,17 @@ async function poll(){
   }catch(e){}
 }
 setInterval(poll,1000);
-poll();
+
+// Auto-start on load
+async function init() {
+  try {
+    await fetch('/api/autostart', { method: 'POST' });
+    poll();
+  } catch(e) {
+    poll();
+  }
+}
+init();
 </script>
 </body>
 </html>
