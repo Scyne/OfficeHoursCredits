@@ -228,7 +228,7 @@
         }
         standby.style.display = "none";
         const sections = splitForSections(participants);
-        roll.innerHTML = `<h1 class="show-title">Great Night Chatrelm</h1><p class="subtitle">Today's Chat Credits</p><div class="section-heading">Special Thanks To</div>${sections.specialThanks.map(entry).join("")}<div class="section-heading">Chatrelm Members</div>${sections.chatRogues.map(entry).join("")}<div id="final-card-scroll" class="final-card">No chatters were harmed<br>in the making of this livestream<br>&lt;&gt;</div>`;
+        roll.innerHTML = `<h1 class="show-title">Great Night Chatrealm</h1><p class="subtitle">Tonight's Chat Credits</p><div class="section-heading">Special Thanks To</div>${sections.specialThanks.map(entry).join("")}<div class="section-heading">Chatrealm Members</div>${sections.chatRogues.map(entry).join("")}<div id="final-card-scroll" class="final-card">No chatters were harmed<br>in the making of this livestream<br>&lt;&gt;</div>`;
     }
     function trackFinalCard() {
         if (trackingRaf) cancelAnimationFrame(trackingRaf);
