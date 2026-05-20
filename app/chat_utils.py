@@ -2,7 +2,8 @@ import asyncio
 import websockets
 import urllib.request
 import re
-import pytchat
+
+from app.yt_live_chat import iter_chat, LiveStreamNotFound, ChatNotAvailable
 
 class TwitchChat:
     def __init__(self, channel, callback, sid, stream_state_ref):
@@ -77,23 +78,22 @@ class YouTubeChat:
             pass
         return None
 
-    async def run(self):
-        # Patch pytchat to bypass get_channelid error
-        original_get_channelid = getattr(pytchat.util, 'get_channelid', None)
-        if original_get_channelid:
-            pytchat.util.get_channelid = lambda client, video_id: "fake_channel_id"
+    def _run_sync(self, vid):
+        # This generator yields forever until the stream ends or errors out.
+        for msg in iter_chat(self.url, video_id=vid):
+            self.callback(msg.author, self.sid)
 
+    async def run(self):
         while True:
             try:
                 self.stream_state_ref[self.sid]["live"] = False
                 vid = self.get_yt_live_id()
                 if vid:
                     self.stream_state_ref[self.sid]["live"] = True
-                    chat = pytchat.LiveChat(video_id=vid)
-                    while chat.is_alive():
-                        for c in chat.get().sync_items():
-                            self.callback(c.author.name, self.sid)
-                        await asyncio.sleep(1)
+                    # Run the blocking iter_chat in a separate thread so it doesn't block the async loop.
+                    await asyncio.to_thread(self._run_sync, vid)
+            except (LiveStreamNotFound, ChatNotAvailable):
+                pass
             except Exception as e:
                 pass
 
