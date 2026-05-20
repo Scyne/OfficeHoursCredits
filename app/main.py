@@ -103,6 +103,10 @@ async def control():
 async def output():
     return FileResponse("/app/app/static/output.html")
 
+@app.get("/greatnightcredits", response_class=HTMLResponse)
+async def greatnightcredits():
+    return FileResponse("/app/app/static/greatnightcredits.html")
+
 @app.get("/api/status")
 async def api_status():
     total = len(chatters)
