@@ -44,13 +44,14 @@ EXCLUDED_NAMES = {"nightbot", "nightattack", "scamschool", "modernrogue", "great
 
 def add_chatter(name):
     global last_message_ts
-    key = name.lower().strip()
+    name = name.strip().lstrip('@')
+    key = name.lower()
     if not key or key in EXCLUDED_NAMES:
         return
     now = time.time()
     if key not in chatters:
         used_titles = {c.get("title", "") for c in chatters.values() if c.get("title")}
-        chatters[key] = {"name": name.strip(), "title": get_random_title(used_titles), "first_seen": now}
+        chatters[key] = {"name": name, "title": get_random_title(used_titles), "first_seen": now}
         save_state()
     last_message_ts = now
 
@@ -139,7 +140,8 @@ async def api_set_chatters(request: Request):
             n = item
             t = ""
 
-        key = n.lower().strip()
+        n = n.strip().lstrip('@')
+        key = n.lower()
         if not key:
             continue
 
@@ -158,7 +160,7 @@ async def api_set_chatters(request: Request):
             if isinstance(item, dict) and "title" in item:
                  new[key]["title"] = t
         else:
-            new[key] = {"name": n.strip(), "title": t, "first_seen": now}
+            new[key] = {"name": n, "title": t, "first_seen": now}
 
     chatters = new
     save_state()
