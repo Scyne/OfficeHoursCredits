@@ -20,7 +20,7 @@ chatters = {}
 stream_state = {sid: {"live": False, "last_seen": 0} for sid in STREAMS}
 last_message_ts = 0
 session_start = time.time()
-command_state = {"action": "preview", "participants": [], "duration": 70, "updatedAt": 0}
+command_state = {"action": "preview", "participants": [], "duration": 70, "finfin_enabled": False, "finfin_intensity": 4, "updatedAt": 0}
 state_lock = threading.Lock()
 
 def load_state():
@@ -177,6 +177,8 @@ async def api_set_command(request: Request):
         "action": data.get("action", "preview"),
         "participants": data.get("participants", []),
         "duration": data.get("duration", 70),
+        "finfin_enabled": data.get("finfin_enabled", command_state.get("finfin_enabled")),
+        "finfin_intensity": data.get("finfin_intensity", command_state.get("finfin_intensity")),
         "updatedAt": int(time.time() * 1000)
     })
     return {"ok": True}
@@ -194,6 +196,7 @@ async def api_autostart():
         "action": "start",
         "participants": participants,
         "duration": duration,
+        # Preserve current finfin settings if they exist
         "updatedAt": int(time.time() * 1000)
     })
     return {"ok": True, "duration": duration, "participants_count": count}

@@ -51,6 +51,14 @@ small{color:var(--muted)}
 <button id="reset">Reset Roll</button>
 <button id="open">Open Output</button>
 </div>
+<hr style="border-color: var(--line); margin: 1rem 0;">
+<div class="row" style="margin-bottom: 0.5rem;">
+<label style="font-weight: bold;"><input type="checkbox" id="finfin-enabled"> FinFin Enabled</label>
+</div>
+<div class="row" style="align-items: center;">
+<label for="finfin-intensity">Intensity (<span id="finfin-val">4</span>)</label>
+<input type="range" id="finfin-intensity" min="1" max="20" step="1" value="4" style="flex: 1;">
+</div>
 <p style="color: #ff7d7d; font-size: 0.9rem; margin-top: 1rem;"><strong>Note:</strong> AUTO RESET is currently not working. The list should be manually reset AFTER every stream.</p>
 <p><small>Office Hours Credits URL: <code>/output</code> — use as OBS Browser Source. Background is transparent.</small></p>
 <p><small>Great Night Credits URL: <code>/greatnightcredits</code> — use as OBS Browser Source. Background is transparent.</small></p>
@@ -63,6 +71,13 @@ const totalEl = document.getElementById('total');
 const namesEl = document.getElementById('names');
 
 async function loadStatus(){
+  const cmdR = await fetch("/api/command");
+  const cmdData = await cmdR.json();
+  const isEnabled = cmdData.finfin_enabled || false;
+  const intensity = cmdData.finfin_intensity || 4;
+  document.getElementById("finfin-enabled").checked = isEnabled;
+  document.getElementById("finfin-intensity").value = intensity;
+  document.getElementById("finfin-val").textContent = intensity;
   const r = await fetch('/api/status');
   const data = await r.json();
   streamsEl.innerHTML = data.streams.map(s => `<div class="stream"><span>${s.name}</span><span class="${s.live?'live':'offline'}">${s.live?'LIVE':'offline'}</span></div>`).join('');
@@ -106,8 +121,19 @@ async function sendCommand(action){
     }
     return { name: parts[0].trim(), title: '' };
   });
-  await fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action, participants, duration:getDuration()})});
+  const finfin_enabled = document.getElementById('finfin-enabled').checked;
+  const finfin_intensity = parseInt(document.getElementById('finfin-intensity').value, 10);
+  await fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action, participants, duration:getDuration(), finfin_enabled, finfin_intensity})});
 }
+
+document.getElementById('finfin-intensity').addEventListener('input', function() {
+    document.getElementById('finfin-val').textContent = this.value;
+    sendCommand('preview');
+});
+document.getElementById('finfin-enabled').addEventListener('change', function() {
+    sendCommand('preview');
+});
+
 document.getElementById('save').onclick = saveEdits;
 document.getElementById('clear').onclick = clearSession;
 document.getElementById('refresh').onclick = ()=>{loadStatus();loadChatters();};

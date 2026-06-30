@@ -176,9 +176,19 @@
         z-index: 10;
         pointer-events: none
     }
+
+    .finfin-sprite {
+        position: fixed;
+        width: 150px;
+        height: auto;
+        z-index: 20;
+        pointer-events: none;
+        will-change: transform;
+    }
     </style>
 </head>
 <body>
+    <div id="finfin-container"></div>
     <main class="stage">
         <div id="standby" class="standby">
             <div>
@@ -197,8 +207,133 @@
     const roll = document.getElementById("roll");
     const standby = document.getElementById("standby");
     const finalCardFixed = document.getElementById("final-card-fixed");
+    const finfinContainer = document.getElementById("finfin-container");
     let lastCommandAt = 0;
     let trackingRaf = null;
+
+    // FinFin Settings
+    const finfinGifs = [
+        'finfinDislike.gif',
+        'finfinEatElmo.gif',
+        'finfinGetAttention.gif',
+        'finfinPleased.gif',
+        'finfinSing_1.gif',
+        'finfinUncertain.gif',
+        'finfinWave.gif',
+        'finfinWriting.gif',
+        'finfinhandsup.gif',
+        'finfinheadshakebellyslap.gif'
+    ];
+    let sprites = [];
+    let animationFrameId = null;
+
+    class FinFinSprite {
+        constructor() {
+            this.el = document.createElement("img");
+            this.el.className = "finfin-sprite";
+            this.changeGif();
+
+            // Random start position
+            this.x = Math.random() * (window.innerWidth - 150);
+            this.y = Math.random() * (window.innerHeight - 150);
+
+            // Random velocity
+            const speed = 3 + Math.random() * 3;
+            const angle = Math.random() * Math.PI * 2;
+            this.vx = Math.cos(angle) * speed;
+            this.vy = Math.sin(angle) * speed;
+
+            finfinContainer.appendChild(this.el);
+        }
+
+        changeGif() {
+            const gif = finfinGifs[Math.floor(Math.random() * finfinGifs.length)];
+
+            // To restart the gif without forcing a network request each time,
+            // we clone the element and replace it.
+            const newEl = this.el.cloneNode(true);
+            newEl.src = `/static/finfin/${gif}`;
+            if (this.el.parentNode) {
+                this.el.parentNode.replaceChild(newEl, this.el);
+            }
+            this.el = newEl;
+        }
+
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            const spriteSize = 150; // approximate width/height
+
+            let bounced = false;
+
+            if (this.x <= 0) {
+                this.x = 0;
+                this.vx *= -1;
+                bounced = true;
+            } else if (this.x >= w - spriteSize) {
+                this.x = w - spriteSize;
+                this.vx *= -1;
+                bounced = true;
+            }
+
+            if (this.y <= 0) {
+                this.y = 0;
+                this.vy *= -1;
+                bounced = true;
+            } else if (this.y >= h - spriteSize) {
+                this.y = h - spriteSize;
+                this.vy *= -1;
+                bounced = true;
+            }
+
+            if (bounced) {
+                this.changeGif();
+            }
+
+            this.el.style.transform = `translate(${this.x}px, ${this.y}px)`;
+        }
+
+        destroy() {
+            this.el.remove();
+        }
+    }
+
+    function animateFinFins() {
+        sprites.forEach(sprite => sprite.update());
+        animationFrameId = requestAnimationFrame(animateFinFins);
+    }
+
+    function updateFinFins(enabled, intensity) {
+        if (!enabled) {
+            sprites.forEach(s => s.destroy());
+            sprites = [];
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            return;
+        }
+
+        const count = intensity;
+
+        // Add sprites if needed
+        while (sprites.length < count) {
+            sprites.push(new FinFinSprite());
+        }
+
+        // Remove sprites if needed
+        while (sprites.length > count) {
+            const s = sprites.pop();
+            s.destroy();
+        }
+
+        if (!animationFrameId && sprites.length > 0) {
+            animateFinFins();
+        }
+    }
 
     function escapeHtml(value) {
         return String(value).replace(/[&<>"']/g, m => ({
@@ -274,6 +409,7 @@
         if (!payload || payload.updatedAt <= lastCommandAt)
             return;
         lastCommandAt = payload.updatedAt;
+        updateFinFins(payload.finfin_enabled, payload.finfin_intensity || 4);
         if (payload.action === "clear") {
             if (trackingRaf) cancelAnimationFrame(trackingRaf);
             finalCardFixed.style.display = "none";
