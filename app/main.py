@@ -1,4 +1,5 @@
 import asyncio, json, os, time, threading
+import urllib.request
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -23,9 +24,54 @@ session_start = time.time()
 command_state = {"action": "preview", "participants": [], "duration": 70, "finfin_enabled": False, "finfin_intensity": 4, "updatedAt": 0}
 state_lock = threading.Lock()
 
+
+# ── Durable state in Upstash Redis ──────────────────────────────────────────
+# Fly machines have ephemeral disks: state.json dies on every redeploy or
+# machine replacement, and command_state was memory-only. When the Upstash
+# REST credentials are present, mirror both state blobs to Redis and treat
+# Redis as the source of truth at startup. Everything degrades gracefully
+# to the old local-file behavior when the env vars are absent or Redis is
+# unreachable.
+REDIS_REST_URL = os.environ.get("UPSTASH_REDIS_REST_URL", "").rstrip("/")
+REDIS_REST_TOKEN = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
+REDIS_STATE_KEY = "officecredits:state"
+REDIS_COMMAND_KEY = "officecredits:command"
+
+def _redis_pipeline(commands):
+    if not REDIS_REST_URL or not REDIS_REST_TOKEN:
+        return None
+    try:
+        req = urllib.request.Request(
+            REDIS_REST_URL + "/pipeline",
+            data=json.dumps(commands).encode(),
+            headers={"Authorization": f"Bearer {REDIS_REST_TOKEN}",
+                     "Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read().decode())
+    except Exception:
+        return None
+
+def _redis_get(key):
+    out = _redis_pipeline([["GET", key]])
+    if out and isinstance(out, list) and out and "result" in out[0]:
+        return out[0]["result"]
+    return None
+
+def _redis_set(key, value):
+    _redis_pipeline([["SET", key, value]])
+
 def load_state():
-    global chatters, last_message_ts, session_start
-    if os.path.exists(STATE_FILE):
+    global chatters, last_message_ts, session_start, command_state
+    raw = _redis_get(REDIS_STATE_KEY)
+    if raw:
+        try:
+            data = json.loads(raw)
+            chatters = data.get("chatters", {})
+            last_message_ts = data.get("last_message_ts", 0)
+            session_start = data.get("session_start", time.time())
+        except Exception:
+            pass
+    elif os.path.exists(STATE_FILE):
         try:
             data = json.load(open(STATE_FILE))
             chatters = data.get("chatters", {})
@@ -33,12 +79,28 @@ def load_state():
             session_start = data.get("session_start", time.time())
         except Exception:
             pass
+    raw_cmd = _redis_get(REDIS_COMMAND_KEY)
+    if raw_cmd:
+        try:
+            saved = json.loads(raw_cmd)
+            if isinstance(saved, dict):
+                command_state.update(saved)
+        except Exception:
+            pass
 
 def save_state():
     with state_lock:
         data = {"chatters": chatters, "last_message_ts": last_message_ts, "session_start": session_start}
-        with open(STATE_FILE, "w") as f:
-            json.dump(data, f)
+        try:
+            with open(STATE_FILE, "w") as f:
+                json.dump(data, f)
+        except Exception:
+            pass
+        payload = json.dumps(data)
+    _redis_set(REDIS_STATE_KEY, payload)
+
+def save_command_state():
+    _redis_set(REDIS_COMMAND_KEY, json.dumps(command_state))
 
 EXCLUDED_NAMES = {"nightbot", "nightattack", "scamschool", "modernrogue", "greatnight"}
 
@@ -181,6 +243,7 @@ async def api_set_command(request: Request):
         "finfin_intensity": data.get("finfin_intensity", command_state.get("finfin_intensity")),
         "updatedAt": int(time.time() * 1000)
     })
+    save_command_state()
     return {"ok": True}
 
 @app.post("/api/autostart")
@@ -199,4 +262,5 @@ async def api_autostart():
         # Preserve current finfin settings if they exist
         "updatedAt": int(time.time() * 1000)
     })
+    save_command_state()
     return {"ok": True, "duration": duration, "participants_count": count}
