@@ -1,9 +1,39 @@
 import asyncio
+import json
+import time
 import websockets
 import urllib.request
 import re
 
 from app.yt_live_chat import iter_chat, LiveStreamNotFound, ChatNotAvailable
+
+
+TWITCH_GQL_URL = "https://gql.twitch.tv/gql"
+# Twitch's own public web client id (used by twitch.tv in the browser).
+TWITCH_WEB_CLIENT_ID = "kimne78kx3ncx6brgo4mv6wki5h1ko"
+
+def twitch_stream_is_live(channel):
+    """True only if the channel is broadcasting right now.
+
+    Twitch chat rooms are joinable 24/7, so a connected IRC socket says
+    nothing about whether the stream is up. Ask Twitch directly: the
+    public GQL endpoint returns a stream object only while broadcasting
+    (type "live"; "rerun" does not count).
+    """
+    body = json.dumps({
+        "query": "query($login:String!){user(login:$login){stream{type}}}",
+        "variables": {"login": channel.lower()},
+    }).encode()
+    req = urllib.request.Request(
+        TWITCH_GQL_URL, data=body,
+        headers={"Client-Id": TWITCH_WEB_CLIENT_ID,
+                 "Content-Type": "application/json",
+                 "User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+    user = (data.get("data") or {}).get("user") or {}
+    stream = user.get("stream")
+    return bool(stream) and stream.get("type") == "live"
 
 class TwitchChat:
     def __init__(self, channel, callback, sid, stream_state_ref):
@@ -17,6 +47,13 @@ class TwitchChat:
         while True:
             try:
                 self.stream_state_ref[self.sid]["live"] = False
+                try:
+                    is_live = await asyncio.to_thread(twitch_stream_is_live, self.channel)
+                except Exception:
+                    is_live = False
+                if not is_live:
+                    await asyncio.sleep(30)
+                    continue
                 async with websockets.connect(uri) as websocket:
                     # Do not request tags since we don't need them and they mess up the parsing
                     await websocket.send("PASS SCHMOOPIIE")
@@ -24,6 +61,7 @@ class TwitchChat:
                     await websocket.send(f"JOIN #{self.channel}")
 
                     self.stream_state_ref[self.sid]["live"] = True
+                    last_check = time.time()
 
                     while True:
                         try:
@@ -40,10 +78,20 @@ class TwitchChat:
                             await websocket.send("PING :tmi.twitch.tv")
                         except websockets.exceptions.ConnectionClosed:
                             break
+                        # Re-verify the broadcast is still up about once a minute;
+                        # the chat room outlives the stream, so don't trust the socket.
+                        if time.time() - last_check >= 60:
+                            last_check = time.time()
+                            try:
+                                still_live = await asyncio.to_thread(twitch_stream_is_live, self.channel)
+                            except Exception:
+                                still_live = True
+                            if not still_live:
+                                break
             except Exception as e:
                 pass
             self.stream_state_ref[self.sid]["live"] = False
-            await asyncio.sleep(60)
+            await asyncio.sleep(30)
 
 class YouTubeChat:
     def __init__(self, url, callback, sid, stream_state_ref):
@@ -60,20 +108,29 @@ class YouTubeChat:
             with urllib.request.urlopen(req) as response:
                 html = response.read().decode('utf-8')
 
-                # Check canonical URL to determine if we are on a live video or redirected to channel page
-                canonical_match = re.search(r'<link rel="canonical" href="([^"]+)">', html)
-                if canonical_match:
-                    canonical = canonical_match.group(1)
-                    if 'watch?v=' in canonical:
-                        return canonical.split('watch?v=')[1]
-                    elif '/channel/' in canonical or '/@' in canonical:
-                        # Redirected to a channel page implies they are not live
-                        return None
+            # Only trust the player response's own broadcast state. A /live
+            # page can resolve to an ended stream's VOD, an upcoming
+            # premiere, or the channel page, all of which carry video IDs
+            # that are NOT live. isLiveNow is set by YouTube only while the
+            # broadcast is actually on air.
+            m = re.search(r'ytInitialPlayerResponse\s*=\s*(\{.+?\});\s*</script>', html, re.S)
+            if m:
+                try:
+                    pr = json.loads(m.group(1))
+                    micro = pr.get("microformat", {}).get("playerMicroformatRenderer", {})
+                    lbd = micro.get("liveBroadcastDetails", {})
+                    if lbd.get("isLiveNow"):
+                        vid = pr.get("videoDetails", {}).get("videoId")
+                        if vid:
+                            return vid
+                    return None
+                except Exception:
+                    pass
 
-                # Fallback to look specifically for the videoId if canonical is undefined or missing
-                match = re.search(r'"videoId":"([^"]+)"', html)
-                if match:
-                    return match.group(1)
+            # Fallback: canonical watch URL plus an explicit isLiveNow marker.
+            canonical_match = re.search(r'<link rel="canonical" href="([^"]+)">', html)
+            if canonical_match and 'watch?v=' in canonical_match.group(1) and '"isLiveNow":true' in html:
+                return canonical_match.group(1).split('watch?v=')[1].split('&')[0]
         except Exception as e:
             pass
         return None
