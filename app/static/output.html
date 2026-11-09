@@ -224,6 +224,9 @@
         'finfinhandsup.gif',
         'finfinheadshakebellyslap.gif'
     ];
+    // Preload every GIF up front so swapping animations never waits on a
+    // fetch or a first decode.
+    finfinGifs.forEach(g => { const pre = new Image(); pre.src = `/static/finfin/${g}`; });
     let sprites = [];
     let animationFrameId = null;
 
@@ -249,14 +252,11 @@
         changeGif() {
             const gif = finfinGifs[Math.floor(Math.random() * finfinGifs.length)];
 
-            // To restart the gif without forcing a network request each time,
-            // we clone the element and replace it.
-            const newEl = this.el.cloneNode(true);
-            newEl.src = `/static/finfin/${gif}`;
-            if (this.el.parentNode) {
-                this.el.parentNode.replaceChild(newEl, this.el);
-            }
-            this.el = newEl;
+            // Swap the src on the same element. Cloning and replacing the
+            // element left a blank gap while the new img decoded; the GIFs
+            // are preloaded, so swapping in place is seamless and the new
+            // animation still starts from its first frame.
+            this.el.src = `/static/finfin/${gif}`;
         }
 
         update() {
