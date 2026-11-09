@@ -12,16 +12,17 @@ TWITCH_GQL_URL = "https://gql.twitch.tv/gql"
 # Twitch's own public web client id (used by twitch.tv in the browser).
 TWITCH_WEB_CLIENT_ID = "kimne78kx3ncx6brgo4mv6wki5h1ko"
 
-def twitch_stream_is_live(channel):
-    """True only if the channel is broadcasting right now.
+def twitch_stream_info(channel):
+    """The channel's live state and current stream title.
 
     Twitch chat rooms are joinable 24/7, so a connected IRC socket says
     nothing about whether the stream is up. Ask Twitch directly: the
     public GQL endpoint returns a stream object only while broadcasting
-    (type "live"; "rerun" does not count).
+    (type "live"; "rerun" does not count). The title matters because one
+    channel hosts many shows; automations gate on it (Office Hours only).
     """
     body = json.dumps({
-        "query": "query($login:String!){user(login:$login){stream{type}}}",
+        "query": "query($login:String!){user(login:$login){stream{type title}}}",
         "variables": {"login": channel.lower()},
     }).encode()
     req = urllib.request.Request(
@@ -32,8 +33,12 @@ def twitch_stream_is_live(channel):
     with urllib.request.urlopen(req, timeout=15) as resp:
         data = json.loads(resp.read().decode("utf-8"))
     user = (data.get("data") or {}).get("user") or {}
-    stream = user.get("stream")
-    return bool(stream) and stream.get("type") == "live"
+    stream = user.get("stream") or {}
+    return {"live": stream.get("type") == "live",
+            "title": stream.get("title")}
+
+def twitch_stream_is_live(channel):
+    return twitch_stream_info(channel)["live"]
 
 class TwitchChat:
     def __init__(self, channel, callback, sid, stream_state_ref):
@@ -47,11 +52,12 @@ class TwitchChat:
         while True:
             try:
                 self.stream_state_ref[self.sid]["live"] = False
+                self.stream_state_ref[self.sid]["title"] = None
                 try:
-                    is_live = await asyncio.to_thread(twitch_stream_is_live, self.channel)
+                    info = await asyncio.to_thread(twitch_stream_info, self.channel)
                 except Exception:
-                    is_live = False
-                if not is_live:
+                    info = {"live": False, "title": None}
+                if not info["live"]:
                     await asyncio.sleep(30)
                     continue
                 async with websockets.connect(uri) as websocket:
@@ -61,6 +67,7 @@ class TwitchChat:
                     await websocket.send(f"JOIN #{self.channel}")
 
                     self.stream_state_ref[self.sid]["live"] = True
+                    self.stream_state_ref[self.sid]["title"] = info.get("title")
                     last_check = time.time()
 
                     while True:
@@ -83,7 +90,9 @@ class TwitchChat:
                         if time.time() - last_check >= 60:
                             last_check = time.time()
                             try:
-                                still_live = await asyncio.to_thread(twitch_stream_is_live, self.channel)
+                                info = await asyncio.to_thread(twitch_stream_info, self.channel)
+                                still_live = info["live"]
+                                self.stream_state_ref[self.sid]["title"] = info.get("title")
                             except Exception:
                                 still_live = True
                             if not still_live:
@@ -91,6 +100,7 @@ class TwitchChat:
             except Exception as e:
                 pass
             self.stream_state_ref[self.sid]["live"] = False
+            self.stream_state_ref[self.sid]["title"] = None
             await asyncio.sleep(30)
 
 class YouTubeChat:

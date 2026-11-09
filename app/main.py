@@ -18,7 +18,7 @@ STREAMS = {
 }
 
 chatters = {}
-stream_state = {sid: {"live": False, "last_seen": 0} for sid in STREAMS}
+stream_state = {sid: {"live": False, "last_seen": 0, "title": None} for sid in STREAMS}
 last_message_ts = 0
 session_start = time.time()
 command_state = {"action": "preview", "participants": [], "duration": 70, "finfin_enabled": False, "finfin_intensity": 4, "updatedAt": 0}
