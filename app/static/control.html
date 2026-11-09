@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><> Diamond Club — Office Credits Control</title>
+<title>Credit Control Panel</title>
 <style>
 :root{
   --bg:#05070d; --panel:#0b0f1a; --panel2:#0e1424;
@@ -29,18 +29,20 @@ body{
 }
 .app{width:min(1100px,calc(100% - 2rem));margin:0 auto;padding:1.75rem 0 2.5rem}
 header{text-align:center;padding:1.25rem 1rem 1.4rem;margin-bottom:1.25rem;position:relative}
-.diamond-mark{
+footer{
+  text-align:center;margin-top:1.6rem;color:var(--muted);
+  letter-spacing:.28em;text-transform:uppercase;font-size:.72rem;
+}
+.diamond-mark-sm{
   font-family:Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif;
-  font-size:4.2rem;line-height:1;letter-spacing:.04em;
+  font-size:1rem;letter-spacing:.04em;
   background:linear-gradient(115deg,#ffffff 10%,var(--ice) 38%,#ffffff 55%,var(--violet) 82%,#ffffff 100%);
   -webkit-background-clip:text;background-clip:text;color:transparent;
-  text-shadow:0 0 34px #6ee7ff2e;
 }
 h1{
   margin:.35rem 0 .3rem;font-size:2rem;letter-spacing:.32em;text-transform:uppercase;
   font-family:Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif;font-weight:400;
 }
-h1 .club{color:var(--ice)}
 header small{color:var(--muted);letter-spacing:.14em;text-transform:uppercase;font-size:.72rem}
 header::after{
   content:"";display:block;height:2px;margin:1.1rem auto 0;width:min(560px,80%);
@@ -102,9 +104,8 @@ input[type="range"]{accent-color:var(--ice)}
 <body>
 <div class="app">
 <header>
-<div class="diamond-mark">&lt;&gt;</div>
-<h1>Diamond <span class="club">Club</span></h1>
-<small>Office Hours Credits Control — Monitors Twitch, Great Night, Scam School, Modern Rogue</small>
+<h1>Credit Control Panel</h1>
+<small>Monitors Twitch, Great Night, Scam School, Modern Rogue</small>
 </header>
 <div class="grid">
 <div class="panel">
@@ -145,6 +146,7 @@ input[type="range"]{accent-color:var(--ice)}
 </div>
 </div>
 </div>
+<footer><span class="diamond-mark-sm">&lt;&gt;</span> Diamond Club</footer>
 <script>
 const streamsEl = document.getElementById('streams');
 const totalEl = document.getElementById('total');
