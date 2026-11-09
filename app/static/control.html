@@ -3,29 +3,109 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Office Credits Control</title>
+<title><> Diamond Club — Office Credits Control</title>
 <style>
-:root { --bg:#070707; --panel:#111; --text:#f6f0dd; --muted:#b9ad92; --line:#39301d; --accent:#ffcf70; }
-*{box-sizing:border-box} body{margin:0;background:#0b0b0b;color:var(--text);font-family:"Trebuchet MS",Verdana,Arial,sans-serif}
-.app{width:min(1100px,calc(100% - 2rem));margin:0 auto;padding:1.5rem 0}
-header{border-bottom:1px solid var(--line);padding-bottom:1rem;margin-bottom:1rem}
-h1{margin:0;font-size:2rem;text-transform:uppercase}
+:root{
+  --bg:#05070d; --panel:#0b0f1a; --panel2:#0e1424;
+  --text:#eef3ff; --muted:#8fa1c4; --line:#22304f;
+  --ice:#6ee7ff; --ice-dim:#2b6f8f; --violet:#9d7bff;
+  --live:#4dff9d; --off:#ff5d73;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;color:var(--text);
+  font-family:"Trebuchet MS",Verdana,Arial,sans-serif;
+  background:
+    radial-gradient(1px 1px at 12% 22%, #ffffffcc 50%, transparent 51%),
+    radial-gradient(1px 1px at 78% 12%, #ffffff99 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 34% 68%, #bfe9ff88 50%, transparent 51%),
+    radial-gradient(1px 1px at 88% 44%, #ffffffaa 50%, transparent 51%),
+    radial-gradient(1px 1px at 55% 30%, #ffffff77 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 5% 82%, #bfe9ff66 50%, transparent 51%),
+    radial-gradient(1px 1px at 66% 86%, #ffffff88 50%, transparent 51%),
+    radial-gradient(900px 480px at 50% -8%, #16264d 0%, transparent 60%),
+    var(--bg);
+  background-attachment:fixed;
+}
+.app{width:min(1100px,calc(100% - 2rem));margin:0 auto;padding:1.75rem 0 2.5rem}
+header{text-align:center;padding:1.25rem 1rem 1.4rem;margin-bottom:1.25rem;position:relative}
+.diamond-mark{
+  font-family:Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif;
+  font-size:4.2rem;line-height:1;letter-spacing:.04em;
+  background:linear-gradient(115deg,#ffffff 10%,var(--ice) 38%,#ffffff 55%,var(--violet) 82%,#ffffff 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 0 34px #6ee7ff2e;
+}
+h1{
+  margin:.35rem 0 .3rem;font-size:2rem;letter-spacing:.32em;text-transform:uppercase;
+  font-family:Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif;font-weight:400;
+}
+h1 .club{color:var(--ice)}
+header small{color:var(--muted);letter-spacing:.14em;text-transform:uppercase;font-size:.72rem}
+header::after{
+  content:"";display:block;height:2px;margin:1.1rem auto 0;width:min(560px,80%);
+  background:linear-gradient(90deg,transparent,var(--ice) 30%,#fff 50%,var(--ice) 70%,transparent);
+  clip-path:polygon(0 50%,2% 0,98% 0,100% 50%,98% 100%,2% 100%);
+}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:1rem}
-.panel h2{margin:0 0 .75rem;color:var(--accent);text-transform:uppercase;font-size:1rem}
+@media (max-width:760px){.grid{grid-template-columns:1fr}}
+.panel{
+  background:linear-gradient(160deg,var(--panel2),var(--panel) 55%);
+  border:1px solid var(--line);padding:1.1rem 1.1rem 1.2rem;
+  clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);
+}
+.panel h2{
+  margin:0 0 .8rem;color:var(--ice);text-transform:uppercase;font-size:.95rem;letter-spacing:.22em;
+  display:flex;align-items:center;gap:.55rem;
+}
+.panel h2::before{content:"◆";font-size:.65rem;color:#fff;text-shadow:0 0 8px var(--ice)}
 .status{display:grid;gap:.5rem}
-.stream{padding:.5rem;border:1px solid var(--line);border-radius:6px;display:flex;justify-content:space-between}
-.live{color:#7dff7d} .offline{color:#ff7d7d}
-textarea{width:100%;min-height:300px;background:#080808;color:var(--text);border:1px solid #3d3a32;border-radius:6px;padding:.7rem;font-family:monospace}
-button{margin:.3rem .3rem 0 0;padding:.55rem .9rem;background:#201a0d;border:1px solid #735f31;border-radius:6px;color:var(--text);cursor:pointer}
-button:hover{border-color:var(--accent);background:#2c220f}
+.stream{
+  padding:.55rem .7rem;border:1px solid var(--line);background:#070b16;
+  display:flex;justify-content:space-between;align-items:center;gap:.6rem;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+}
+.stream .who{display:flex;align-items:center;gap:.55rem;font-weight:bold;letter-spacing:.03em}
+.chip{
+  font-size:.6rem;font-weight:bold;letter-spacing:.16em;padding:.14rem .42rem;border:1px solid;
+}
+.chip.twitch{color:#c9a7ff;border-color:#6441a5;background:#1c1030}
+.chip.youtube{color:#ff9a9a;border-color:#8f2b2b;background:#2b0f0f}
+.live{color:var(--live);font-weight:bold;letter-spacing:.12em}
+.live::before{content:"● ";animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.offline{color:var(--off);letter-spacing:.12em}
+#total{color:var(--muted);letter-spacing:.06em}
+textarea{
+  width:100%;min-height:300px;background:#05080f;color:var(--text);
+  border:1px solid var(--line);padding:.7rem;font-family:monospace;
+  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
+}
+textarea:focus{outline:1px solid var(--ice-dim)}
+button{
+  margin:.3rem .3rem 0 0;padding:.55rem .95rem;cursor:pointer;color:var(--text);
+  background:linear-gradient(180deg,#16233f,#0d1526);border:1px solid var(--ice-dim);
+  letter-spacing:.08em;text-transform:uppercase;font-size:.78rem;
+  clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);
+}
+button:hover{border-color:var(--ice);background:linear-gradient(180deg,#1d2f57,#101b33)}
+button.danger{border-color:#8f3542;background:linear-gradient(180deg,#33121a,#200a10)}
+button.danger:hover{border-color:var(--off)}
 .row{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-top:.5rem}
+hr{border:none;border-top:1px solid var(--line);margin:1rem 0}
 small{color:var(--muted)}
+code{color:var(--ice)}
+input[type="range"]{accent-color:var(--ice)}
+.warn{color:#ff8b99;font-size:.9rem;margin-top:1rem}
 </style>
 </head>
 <body>
 <div class="app">
-<header><h1>Office Credits Control</h1><small>Monitors Night Attack, Scam School, Modern Rogue, Great Night</small></header>
+<header>
+<div class="diamond-mark">&lt;&gt;</div>
+<h1>Diamond <span class="club">Club</span></h1>
+<small>Office Hours Credits Control — Monitors Twitch, Great Night, Scam School, Modern Rogue</small>
+</header>
 <div class="grid">
 <div class="panel">
 <h2>Streams</h2>
@@ -35,7 +115,7 @@ small{color:var(--muted)}
 <textarea id="names" placeholder="Name | Title"></textarea>
 <div class="row">
 <button id="save">Save Edits</button>
-<button id="clear" style="border-color:#704141;background:#2b1111">Clear Session</button>
+<button id="clear" class="danger">Clear Session</button>
 <button id="refresh">Refresh</button>
 </div>
 </div>
@@ -51,7 +131,7 @@ small{color:var(--muted)}
 <button id="reset">Reset Roll</button>
 <button id="open">Open Output</button>
 </div>
-<hr style="border-color: var(--line); margin: 1rem 0;">
+<hr>
 <div class="row" style="margin-bottom: 0.5rem;">
 <label style="font-weight: bold;"><input type="checkbox" id="finfin-enabled"> FinFin Enabled</label>
 </div>
@@ -59,7 +139,7 @@ small{color:var(--muted)}
 <label for="finfin-intensity">Intensity (<span id="finfin-val">4</span>)</label>
 <input type="range" id="finfin-intensity" min="1" max="20" step="1" value="4" style="flex: 1;">
 </div>
-<p style="color: #ff7d7d; font-size: 0.9rem; margin-top: 1rem;"><strong>Note:</strong> AUTO RESET is currently not working. The list should be manually reset AFTER every stream.</p>
+<p class="warn"><strong>Note:</strong> AUTO RESET is currently not working. The list should be manually reset AFTER every stream.</p>
 <p><small>Office Hours Credits URL: <code>/output</code> — use as OBS Browser Source. Background is transparent.</small></p>
 <p><small>Great Night Credits URL: <code>/greatnightcredits</code> — use as OBS Browser Source. Background is transparent.</small></p>
 </div>
@@ -80,7 +160,12 @@ async function loadStatus(){
   document.getElementById("finfin-val").textContent = intensity;
   const r = await fetch('/api/status');
   const data = await r.json();
-  streamsEl.innerHTML = data.streams.map(s => `<div class="stream"><span>${s.name}</span><span class="${s.live?'live':'offline'}">${s.live?'LIVE':'offline'}</span></div>`).join('');
+  streamsEl.innerHTML = data.streams.map(s => {
+    const platform = s.id === 'nightattack'
+      ? '<span class="chip twitch">TWITCH</span>'
+      : '<span class="chip youtube">YOUTUBE</span>';
+    return `<div class="stream"><span class="who">${s.name} ${platform}</span><span class="${s.live?'live':'offline'}">${s.live?'LIVE':'offline'}</span></div>`;
+  }).join('');
   totalEl.textContent = `Total chatters: ${data.total_chatters}`;
 }
 async function loadChatters(){

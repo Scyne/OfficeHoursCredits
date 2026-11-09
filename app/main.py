@@ -11,10 +11,10 @@ STATE_FILE = os.path.join(DATA_DIR, "state.json")
 os.makedirs(DATA_DIR, exist_ok=True)
 
 STREAMS = {
-    "nightattack": {"name": "Night Attack (Twitch)", "url": "https://www.twitch.tv/nightattack"},
-    "scamschool": {"name": "Scam School (YouTube)", "url": "https://www.youtube.com/scamschool/live"},
-    "modernrogue": {"name": "Modern Rogue (YouTube)", "url": "https://www.youtube.com/@ModernRogue/live"},
-    "greatnight": {"name": "Great Night (YouTube)", "url": "https://www.youtube.com/@GreatNightPod/live"},
+    "nightattack": {"name": "Twitch", "url": "https://www.twitch.tv/nightattack"},
+    "greatnight": {"name": "Great Night", "url": "https://www.youtube.com/@GreatNightPod/live"},
+    "scamschool": {"name": "Scam School", "url": "https://www.youtube.com/scamschool/live"},
+    "modernrogue": {"name": "Modern Rogue", "url": "https://www.youtube.com/@ModernRogue/live"},
 }
 
 chatters = {}
